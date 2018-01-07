@@ -14,6 +14,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -44,6 +47,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     long prevTime = 0;
     long currTime;
     /*===================================*/
+
+    /*========== Database ==========*/
+    FirebaseDatabase database = FirebaseDatabase.getInstance("https://unity-test-97af2.firebaseio.com/");
+    DatabaseReference myRef = database.getReference("counter");
+    /*==============================*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     /*========== Client Class ==========*/
+    /** Obsolete **/
     private class Client extends AsyncTask<Void, Void, Void> {
         boolean isConnected;
         Client(String add){
@@ -135,11 +144,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     movement = 1;
                     //Display the number of steps
                     count = count + 1;
+                    myRef.setValue(count);
                     dispCount = Integer.toString(count);
                     textView.setText(dispCount);
                     //Update the reverse magnitude and time
                     reverse = -magnitude;
                     prevTime = currTime;
+                    //movement = 0;
+                    //myRef.setValue(movement);
                 }
             }
         }
