@@ -1,10 +1,12 @@
 package com.kirov.prototypeapp;
 
+import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.AsyncTask;
+import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -52,27 +54,35 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     FirebaseDatabase database = FirebaseDatabase.getInstance("https://unity-test-97af2.firebaseio.com/");
     DatabaseReference myRef = database.getReference("counter");
     /*==============================*/
+    PowerManager pm;
+    PowerManager.WakeLock wl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        pm  = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "my Tag");
         /*========== Client ==========*/
-        addressText = (EditText)findViewById(R.id.ipInput);
-        buttonConnect = (Button)findViewById(R.id.buttonConnect);
+        //addressText = (EditText)findViewById(R.id.ipInput);
+        //buttonConnect = (Button)findViewById(R.id.buttonConnect);
         buttonDisconnect = (Button)findViewById(R.id.buttonDisconnect);
-        buttonConnect.setOnClickListener(new View.OnClickListener(){
+        /*buttonConnect.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 Client mClient = new Client(addressText.getText().toString());
                 mClient.execute();
             }
-        });
+        });*/
         buttonDisconnect.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                isDisconnected = true;
+                //isDisconnected = true;
+                count = 0;
+                myRef.setValue(count);
+                dispCount = Integer.toString(count);
+                textView.setText(dispCount);
             }
         });
         /*============================*/
@@ -83,8 +93,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sm.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST);
         textView = (TextView)findViewById(R.id.displayText);
         /*===================================*/
+
+        wl.acquire();
     }
 
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        wl.release();
+    }
     /*========== Client Class ==========*/
     /** Obsolete **/
     private class Client extends AsyncTask<Void, Void, Void> {
@@ -145,6 +162,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     //Display the number of steps
                     count = count + 1;
                     myRef.setValue(count);
+                    //Send data to Firebase
                     dispCount = Integer.toString(count);
                     textView.setText(dispCount);
                     //Update the reverse magnitude and time
