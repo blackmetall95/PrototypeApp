@@ -15,6 +15,10 @@ import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.ui.auth.ResultCodes;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 
 import java.util.Arrays;
 
@@ -56,7 +60,12 @@ public class LoginPage extends AppCompatActivity{
             if (resultCode == ResultCodes.OK){
                 startActivity(new Intent(LoginPage.this, MainActivity.class));
                 finish();
-                return;
+
+                /*//Get firebase user
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                //Get reference
+                DatabaseReference ref = FirebaseDatabase.getInstance().getReference("users");
+                ref.child(user.getUid()).setValue("user_class");*/
             }
             else {
                 //Sign in Failed

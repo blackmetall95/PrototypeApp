@@ -16,22 +16,15 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.Socket;
-
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
     /*========== Client ==========*/
-    private String address;
-    private int portNum = 8080;
-    private Button buttonConnect;
     private Button buttonDisconnect;
-    private EditText addressText;
-    private int movement = 0;
-    private boolean isDisconnected;
+    //private int movement = 0;
     /*============================*/
 
     /*========== Step Detector ==========*/
@@ -51,8 +44,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     /*===================================*/
 
     /*========== Database ==========*/
-    FirebaseDatabase database = FirebaseDatabase.getInstance("https://unity-test-97af2.firebaseio.com/");
-    DatabaseReference myRef = database.getReference("counter");
+    DatabaseReference ref1;
+    DatabaseReference ref2;
     /*==============================*/
     PowerManager pm;
     PowerManager.WakeLock wl;
@@ -62,25 +55,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        /*=====================================*/
+        //Get Firebase user
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        //Get reference to users field
+        ref1 = FirebaseDatabase.getInstance().getReference("users");
+        //Create userID as child of users
+        ref1.child(user.getUid()).setValue("user_class");
+        //Get reference to child of userID
+        ref2 = ref1.child(user.getUid());
+        //Create counter as child of userID
+        ref2.child("counter").setValue(0);
+        ref2 = ref2.child("counter");
+        /*======================================*/
+
+
         pm  = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "my Tag");
         /*========== Client ==========*/
-        //addressText = (EditText)findViewById(R.id.ipInput);
-        //buttonConnect = (Button)findViewById(R.id.buttonConnect);
         buttonDisconnect = (Button)findViewById(R.id.buttonDisconnect);
-        /*buttonConnect.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                Client mClient = new Client(addressText.getText().toString());
-                mClient.execute();
-            }
-        });*/
         buttonDisconnect.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 //isDisconnected = true;
                 count = 0;
-                myRef.setValue(count);
+                ref2.setValue(count);
                 dispCount = Integer.toString(count);
                 textView.setText(dispCount);
             }
@@ -104,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
     /*========== Client Class ==========*/
     /** Obsolete **/
-    private class Client extends AsyncTask<Void, Void, Void> {
+    /**private class Client extends AsyncTask<Void, Void, Void> {
         boolean isConnected;
         Client(String add){
             address = add;
@@ -121,7 +120,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Log.d("[ASYNCTASK]", "Connected!");
                 showToast("Connected!");
                 isConnected = true;
-                //TODO Implement sending operations
                 while (isConnected && !isDisconnected){
                     if (movement == 1){
                         DataOutputStream DOS = new DataOutputStream(socket.getOutputStream());
@@ -138,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             return null;
         }
-    }
+    }**/
     /*==================================*/
 
     /*========== Step Detector ==========*/
@@ -158,10 +156,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (magnitude>threshold && magnitude >= reverse){
                 //Time limit used to slow down the detection
                 if ((currTime-prevTime) > 200) {
-                    movement = 1;
+                    //movement = 1;
                     //Display the number of steps
                     count = count + 1;
-                    myRef.setValue(count);
+                    ref2.setValue(count);
                     //Send data to Firebase
                     dispCount = Integer.toString(count);
                     textView.setText(dispCount);
