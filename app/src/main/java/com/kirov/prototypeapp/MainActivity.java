@@ -18,8 +18,11 @@ import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
     /*========== Client ==========*/
@@ -37,16 +40,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     float y;
     float z;
     int count = 0;
+    int count2;
     String dispCount;
     TextView textView;
     long prevTime = 0;
     long currTime;
     /*===================================*/
 
-    /*========== Database ==========*/
+    /*========== Firebase ==========*/
     DatabaseReference ref1;
     DatabaseReference ref2;
     /*==============================*/
+
     PowerManager pm;
     PowerManager.WakeLock wl;
 
@@ -55,23 +60,41 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        /*=====================================*/
+        /*============== Firebase ==============*/
         //Get Firebase user
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         //Get reference to users field
         ref1 = FirebaseDatabase.getInstance().getReference("users");
-        //Create userID as child of users
-        ref1.child(user.getUid()).setValue("user_class");
-        //Get reference to child of userID
-        ref2 = ref1.child(user.getUid());
-        //Create counter as child of userID
-        ref2.child("counter").setValue(0);
-        ref2 = ref2.child("counter");
-        /*======================================*/
+        //Create "userID" as child of "users"
+        ref1.child(user.getUid()).setValue("userID");
+        //Create "counter" as child of "userID"
+        ref1.child(user.getUid()).child("counter").setValue(0);
+        //Reference "counter" of "userID"
+        ref2 = ref1.child(user.getUid()).child("counter");
+        //Add listener to "counter"
+        ref2.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                count2 = dataSnapshot.getValue(int.class);
+                //Reset local count variable to 0 on game start
+                if (count2 == 0){
+                    count = 0;
+                    dispCount = Integer.toString(count);
+                    textView.setText(dispCount);
+                }
+            }
 
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                // Getting Post failed, log a message
+                Log.w("Listener:onCancelled", databaseError.toException());
+            }
+        });
+        /*=======================================*/
 
         pm  = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "my Tag");
+
         /*========== Client ==========*/
         buttonDisconnect = (Button)findViewById(R.id.buttonDisconnect);
         buttonDisconnect.setOnClickListener(new View.OnClickListener(){
@@ -101,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onDestroy();
         wl.release();
     }
+
     /*========== Client Class ==========*/
     /** Obsolete **/
     /**private class Client extends AsyncTask<Void, Void, Void> {
@@ -156,18 +180,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (magnitude>threshold && magnitude >= reverse){
                 //Time limit used to slow down the detection
                 if ((currTime-prevTime) > 200) {
-                    //movement = 1;
-                    //Display the number of steps
+                    //Update counter
                     count = count + 1;
-                    ref2.setValue(count);
                     //Send data to Firebase
+                    ref2.setValue(count);
+                    //Display the number of steps
                     dispCount = Integer.toString(count);
                     textView.setText(dispCount);
                     //Update the reverse magnitude and time
                     reverse = -magnitude;
                     prevTime = currTime;
-                    //movement = 0;
-                    //myRef.setValue(movement);
                 }
             }
         }
