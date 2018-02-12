@@ -87,15 +87,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ref2.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                count2 = dataSnapshot.getValue(int.class);
-                //Reset local count variable to 0 on game start
-                if (count2 == 0) {
-                    count = 0;
-                    dispCount = Integer.toString(count);
-                    textView.setText(dispCount);
+                if (dataSnapshot.getValue() != null) {
+                    count2 = dataSnapshot.getValue(int.class);
+                    //Reset local count variable to 0 on game start
+                    if (count2 == 0) {
+                        count = 0;
+                        dispCount = Integer.toString(count);
+                        textView.setText(dispCount);
+                    }
                 }
             }
-
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 // Getting Post failed, log a message
@@ -239,6 +240,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 finish();
                 startActivity(intent);
                 return true;*/
+                startActivity(new Intent(MainActivity.this, LoginPage.class));
+                finish();
             default:
                 return super.onOptionsItemSelected(item);
         }
