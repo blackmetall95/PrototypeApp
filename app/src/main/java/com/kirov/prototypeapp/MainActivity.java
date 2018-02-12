@@ -184,14 +184,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onSensorChanged(SensorEvent event) {
         threshold = 15;
         if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            //x = event.values[0];
+            x = event.values[0];
             y = event.values[1];
             z = event.values[2];
 
             //Get the Current Time from the device
             currTime = System.currentTimeMillis();
             //Find the magnitude of the Y and Z axis using Pythagorean Theorem
-            magnitude = (float) Math.sqrt((y*y) + (z*z));
+            magnitude = (float) Math.sqrt((x*x) + (y*y) + (z*z));
             //If the magnitude of Y and Z is bigger than the threshold and reverse value
             if (magnitude>threshold && magnitude >= reverse){
                 //Time limit used to slow down the detection
