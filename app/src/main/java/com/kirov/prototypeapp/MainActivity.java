@@ -1,6 +1,7 @@
 package com.kirov.prototypeapp;
 
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -10,6 +11,9 @@ import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -43,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     int count2;
     String dispCount;
     TextView textView;
+    TextView usernameDisp;
     long prevTime = 0;
     long currTime;
     /*===================================*/
@@ -50,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     /*========== Firebase ==========*/
     DatabaseReference ref1;
     DatabaseReference ref2;
+    String email, convertedEmail;
     /*==============================*/
 
     PowerManager pm;
@@ -65,19 +71,25 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         //Get reference to users field
         ref1 = FirebaseDatabase.getInstance().getReference("users");
-        //Create "userID" as child of "users"
-        ref1.child(user.getUid()).setValue("userID");
-        //Create "counter" as child of "userID"
-        ref1.child(user.getUid()).child("counter").setValue(0);
-        //Reference "counter" of "userID"
-        ref2 = ref1.child(user.getUid()).child("counter");
+        //Get email from current user
+        if (user.getEmail() != null) {
+            email = user.getEmail();
+        }
+        //Convert email to remove illegal characters
+        convertedEmail = email.replace('.', ',');
+        //Create a new field using the converted email
+        ref1.child(convertedEmail).setValue(user.getUid());
+        //Create "counter" as child of converted email
+        ref1.child(convertedEmail).child("counter").setValue(0);
+        //Reference "counter" for read/write
+        ref2 = ref1.child(convertedEmail).child("counter");
         //Add listener to "counter"
         ref2.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 count2 = dataSnapshot.getValue(int.class);
                 //Reset local count variable to 0 on game start
-                if (count2 == 0){
+                if (count2 == 0) {
                     count = 0;
                     dispCount = Integer.toString(count);
                     textView.setText(dispCount);
@@ -90,6 +102,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Log.w("Listener:onCancelled", databaseError.toException());
             }
         });
+
+        usernameDisp = findViewById(R.id.usernameDisplay);
+        usernameDisp.setText("UserID: " + convertedEmail);
         /*=======================================*/
 
         pm  = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -113,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sm = (SensorManager) getSystemService(SENSOR_SERVICE);
         sensor = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sm.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST);
-        textView = (TextView)findViewById(R.id.displayText);
+        textView = findViewById(R.id.displayText);
         /*===================================*/
 
         wl.acquire();
@@ -206,5 +221,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Toast.makeText(getApplicationContext(), toast, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.options_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch(item.getItemId()){
+            case R.id.log_out:
+                FirebaseAuth.getInstance().signOut();
+                /*Intent intent = getIntent();
+                finish();
+                startActivity(intent);
+                return true;*/
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }
